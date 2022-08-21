@@ -1,5 +1,9 @@
 import pygame
+import fillzone
 import numpy as np
+
+# get random generator 
+rng = np.random.RandomState()
 
 # create window with preferred dimensions
 WIDTH, HEIGHT = 500, 500
@@ -19,12 +23,13 @@ COLOR_MAP = {i: x for i, x in enumerate(COLORS)}
 
 ALLOWED_KEYS = [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]
 
+
 FPS = 60
-rng = np.random.RandomState()
 grid_width = 300
 grid_height = 300
 
-grid = rng.randint(0, 6, size=(6, 6))
+SIZE = 10
+grid = rng.randint(0, 6, size=(SIZE, SIZE))
 
 pygame.display.set_caption("Fillzone")
 
@@ -39,15 +44,16 @@ def draw_grid(grid, n):
     for y in range(100, grid_height + 100, blockSize):
       rect = pygame.Rect(x, y, blockSize, blockSize)
       pygame.draw.rect(WIN, COLOR_MAP[grid[(x - 100) // blockSize, (y - 100) // blockSize]], rect, 0)
-      
+
   pygame.display.update()
 
-def process(key):
-  pass
-  # tengo que modificar de cierta manera el state, la matriz
+def process(game, key):
+  int(key)
+  game.update(key)
 
 def main():
   clock = pygame.time.Clock()
+  game = fillzone.Fillzone(SIZE, len(COLORS))
   running = True
 
   while running:
@@ -57,8 +63,12 @@ def main():
     for event in pygame.event.get():
       if event.type == pygame.QUIT:
         running = False
+      
+      if event.type == pygame.KEYDOWN:
+        if event.key in ALLOWED_KEYS:
+          process(game, pygame.key.name(event.key))
 
-    draw_grid(grid, 5)
+    draw_grid(grid, SIZE)
     
 
   pygame.quit()
