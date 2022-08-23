@@ -2,6 +2,10 @@ import pygame
 import fillzone
 import numpy as np
 
+# fillzone -> estructura interna del juego
+# pygame -> el juego, la gui.
+# player -> 
+
 # get random generator 
 rng = np.random.RandomState()
 
@@ -16,6 +20,7 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 PINK = (255, 200, 200)
 YELLOW = (255, 255, 0)
+
 COLORS = [WHITE, RED, GREEN, BLUE, PINK, YELLOW]
 
 # number - color mapping
@@ -27,8 +32,8 @@ ALLOWED_KEYS = [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pyga
 FPS = 60
 grid_width = 300
 grid_height = 300
+SIZE = 6
 
-SIZE = 10
 grid = rng.randint(0, 6, size=(SIZE, SIZE))
 
 pygame.display.set_caption("Fillzone")
@@ -42,19 +47,22 @@ def draw_grid(grid, n):
   # draw each block
   for x in range(100, grid_width + 100, blockSize):
     for y in range(100, grid_height + 100, blockSize):
-      rect = pygame.Rect(x, y, blockSize, blockSize)
+      rect = pygame.Rect(y, x, blockSize, blockSize)
       pygame.draw.rect(WIN, COLOR_MAP[grid[(x - 100) // blockSize, (y - 100) // blockSize]], rect, 0)
-
   pygame.display.update()
 
+
 def process(game, key):
-  int(key)
-  game.update(key)
+  game.update(int(key))
+
 
 def main():
   clock = pygame.time.Clock()
-  game = fillzone.Fillzone(SIZE, len(COLORS))
+  game = fillzone.Fillzone(SIZE, len(COLORS[:3]))
   running = True
+
+  print(type(game.state))
+  print(game.state)
 
   while running:
     clock.tick(FPS)
@@ -66,11 +74,11 @@ def main():
       
       if event.type == pygame.KEYDOWN:
         if event.key in ALLOWED_KEYS:
+          print(pygame.key.name(event.key))
           process(game, pygame.key.name(event.key))
 
-    draw_grid(grid, SIZE)
+    draw_grid(game.state, SIZE)
     
-
   pygame.quit()
 
 if __name__ == "__main__":

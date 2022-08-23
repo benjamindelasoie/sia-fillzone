@@ -12,8 +12,3 @@ class Fillzone:
   def check(self):
     '''Checkea si el estado actual es solucion'''
     pass
-
-
-
-game = Fillzone(14, 6)
-print(game.state)
