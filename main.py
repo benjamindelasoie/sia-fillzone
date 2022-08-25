@@ -79,42 +79,27 @@ def bfs(root):
                     queue.append(new_node)
 
 
-def dfs(actual_node):
+def dfs(actual_node, limit):
+    # nodo Encontrado
     if is_goal(actual_node):
+        print('GOAL')
         return actual_node
+
+    # paso el limite
+    if limit < 0:
+        return None
+
+    # siguiente nodo
     for color in range(colors):
         if color != actual_node.color:
-            new_state = change_color(actual_node.state, actual_node.visited, color)
-            new_node = node.Node(new_state, false , actual_node.cost + 1, node, color)
-            dfs(new_node)
-
-
-def dfs_non_recursive(graph, source):
-    if source is None or source not in graph:
-        return "Invalid input"
-    path = []
-    stack = [source]
-    while (len(stack) != 0):
-        s = stack.pop()
-        if s not in path:
-            path.append(s)
-        if s not in graph:
-            # leaf node
-            continue
-        for neighbor in graph[s]:
-            stack.append(neighbor)
-    return " ".join(path)
-
-
-def recursive_dfs(graph, source, path=[]):
-    if source not in path:
-        path.append(source)
-        if source not in graph:
-            # leaf node, backtrack
-            return path
-        for neighbour in graph[source]:
-            path = recursive_dfs(graph, neighbour, path)
-    return path
+            new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
+            blank_matrix = np.zeros((dim, dim))
+            main_island = get_main_island_rec(new_state, blank_matrix, 0, 0, color)
+            if not is_insignificant_move(actual_node.visited, main_island):
+                new_node = node.Node(new_state, main_island, actual_node.cost + 1, actual_node, color)
+                next_node = dfs(new_node, limit - 1)
+                if next_node is not None:
+                    return next_node
 
 
 def main():
@@ -131,7 +116,13 @@ def main():
     print(random_matrix)
     print('                 ')
 
-    bfs(root)
+    # bfs(root)
+    goal = dfs(root, 10)
+    current = goal
+    while current.parent is not root:
+        print(current.parent.state)
+        print('                 ')
+        current = current.parent
 
 
 if __name__ == "__main__":
