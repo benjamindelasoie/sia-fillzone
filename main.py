@@ -56,7 +56,7 @@ def is_insignificant_move(visited, new_visited):
 
 
 # armo una cola y voy sacando el nodo que hace más tiempo se encuentra en la cola
-def bfs(root):
+def bfs_search(root):
     queue = [root]
 
     while queue:
@@ -79,7 +79,7 @@ def bfs(root):
                     queue.append(new_node)
 
 
-def dfs(actual_node, limit):
+def dfs_search(actual_node, limit):
     # nodo Encontrado
     if is_goal(actual_node):
         print('GOAL')
@@ -97,9 +97,13 @@ def dfs(actual_node, limit):
             main_island = get_main_island_rec(new_state, blank_matrix, 0, 0, color)
             if not is_insignificant_move(actual_node.visited, main_island):
                 new_node = node.Node(new_state, main_island, actual_node.cost + 1, actual_node, color)
-                next_node = dfs(new_node, limit - 1)
+                next_node = dfs_search(new_node, limit - 1)
                 if next_node is not None:
                     return next_node
+
+
+def a_search(root):
+    return
 
 
 def main():
@@ -111,13 +115,13 @@ def main():
                      random_matrix[0][0])
     # print(root.visited)
 
-    # print(bfs(root))
+    # print(bfs_search(root))
     print('Initial state')
     print(random_matrix)
     print('                 ')
 
-    # bfs(root)
-    goal = dfs(root, 10)
+    # bfs_search(root)
+    goal = dfs_search(root, 10)
     current = goal
     while current.parent is not root:
         print(current.parent.state)
