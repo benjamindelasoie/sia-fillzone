@@ -1,5 +1,6 @@
 import numpy as np
 import node
+import Utils.priorityQueue as priorityQueue
 
 colors = 5
 dim = 6
@@ -11,6 +12,7 @@ dim = 6
 # index = 3 ---> ABAJO
 row = [-1, 0, 0, 1]
 col = [0, -1, 1, 0]
+movement_cost = 1;
 
 
 # devuelve una matriz con 1's donde se ubica nuestra isla principal
@@ -103,7 +105,27 @@ def dfs_search(actual_node, limit):
 
 
 def a_search(root):
-    return
+    queue = priorityQueue.PriorityQueue()
+    queue.insert(root)
+
+    while not queue.isEmpty():
+        actual_node = queue.pop()
+        if is_goal(actual_node):
+            print('GOAL')
+            print(actual_node.state)
+            return actual_node
+
+        # por cada color veo como queda la matriz al escogerlo
+        for color in range(colors):
+            if color != actual_node.color:
+                new_state = change_color(actual_node.state, actual_node.visited, color)
+                blank_matrix = np.zeros((dim, dim))
+                main_island = get_main_island_rec(new_state, blank_matrix, 0, 0, color)
+                if not is_insignificant_move(actual_node.visited, main_island):
+                    print('                 ')
+                    print(new_state)
+                    new_node = node.Node(new_state, main_island, actual_node.cost + 1, actual_node, color)
+                    queue.insert(new_node)
 
 
 def main():
