@@ -4,6 +4,7 @@ import Utils.priorityQueue as priorityQueue
 
 colors = 5
 dim = 6
+heuristic=1
 
 # arrays para movernos hacia los bloques adyacentes
 # index = 0 ---> ARRIBA
@@ -104,6 +105,16 @@ def dfs_search(actual_node, limit):
                     return next_node
 
 
+#funcion heurisitca que devuelve la cantidad de bloques nuevos 'conquistados'
+def heuristic1(node):
+    return 0
+
+#funcion heuristica ??
+def heuristic2(node):
+    return 0
+
+
+
 def a_search(root):
     queue = priorityQueue.PriorityQueue()
     queue.insert(root)
@@ -125,6 +136,13 @@ def a_search(root):
                     print('                 ')
                     print(new_state)
                     new_node = node.Node(new_state, main_island, actual_node.cost + 1, actual_node, color)
+
+                    if(heuristic == 1):
+                        heuristic_val= heuristic1(new_node)
+                    else:
+                        heuristic_val = heuristic2(new_node)
+
+                    new_node.set_value(new_node.cost + heuristic_val)
                     queue.insert(new_node)
 
 
@@ -145,8 +163,8 @@ def main():
     # bfs_search(root)
     goal = dfs_search(root, 10)
     current = goal
-    while current.parent is not root:
-        print(current.parent.state)
+    while current is not root:
+        print(current.state)
         print('                 ')
         current = current.parent
 
