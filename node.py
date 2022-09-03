@@ -1,15 +1,16 @@
 class Node:
 
-    def __init__(self, state, visited, cost, parent, color):
+    def __init__(self, state, visited, cost, parent, color, island_size):
         self.visited = visited
         self.state = state
         self.color = color
         self.parent = parent
+        self.island_size = island_size
         self.cost = cost
         self.value = 0
         # valor que se utiliza en los metodos de busqueda informados
-        #si es a_search --> value = cost + heuristica
-        #si es greedy ----> value = heuristica
+        # si es a_search --> value = cost + heuristica
+        # si es greedy ----> value = heuristica
 
     def set_cost(self, cost):
         self.cost = cost
