@@ -225,3 +225,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # TODO ver COUNTS DE CONSIGNA (como nodos frontera)
+    # TODO testear metodos
+    # TODO enlasar con front
+    # TODO ver heuristicas
+    # TODO tiempo Poceso
+    # TODO README
