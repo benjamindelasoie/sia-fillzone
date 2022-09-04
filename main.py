@@ -66,37 +66,41 @@ def is_insignificant_move(visited, new_visited):
 # armo una cola y voy sacando el nodo que hace más tiempo se encuentra en la cola
 def bfs_search(root):
     queue = [root]
+    total_nodes = 1
+    border_nodes = 1
 
     while queue:
         actual_node = queue.pop(0)
+        border_nodes = border_nodes - 1
         if is_goal(actual_node):
             print('GOAL')
-            print(actual_node.state)
-            return actual_node
+            return actual_node, border_nodes, total_nodes
 
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
             if color != actual_node.color:
-                new_state = change_color(actual_node.state, actual_node.visited, color)
+                new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
                 blank_matrix = np.zeros((dim, dim))
                 main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
                 if not is_insignificant_move(actual_node.visited, main_island):
-                    print('                 ')
-                    print(new_state)
                     new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                          actual_node, color, island_size)
                     queue.append(new_node)
+                    total_nodes = total_nodes + 1
+                    border_nodes = border_nodes + 1
 
 
-def dfs_search(actual_node, limit):
+def dfs_search(actual_node, limit, border_nodes_dfs=1, total_nodes_dfs=1):
+    border_nodes_dfs = border_nodes_dfs - 1
     # nodo Encontrado
     if is_goal(actual_node):
         print('GOAL')
-        return actual_node
+        return actual_node, border_nodes_dfs, total_nodes_dfs
 
     # paso el límite
     if limit < 0:
-        return None
+        print('limit')
+        return None, border_nodes_dfs, total_nodes_dfs
 
     # siguiente nodo
     for color in range(colors):
@@ -107,9 +111,38 @@ def dfs_search(actual_node, limit):
             if not is_insignificant_move(actual_node.visited, main_island):
                 new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                      actual_node, color, island_size)
-                next_node = dfs_search(new_node, limit - 1)
+                next_node, border_nodes, total_nodes = dfs_search(new_node, limit - 1, border_nodes_dfs + 1, total_nodes_dfs + 1)
                 if next_node is not None:
-                    return next_node
+                    return next_node, border_nodes, total_nodes
+
+# agrego esta opcion de dfs porque la otra no funciona bien con el limite
+def dfs_search_2(root, limit, border_nodes_dfs=1, total_nodes_dfs=1):
+    border_nodes = 1
+    total_nodes = 1
+    stack = [root]
+
+    while stack:
+        actual_node = stack.pop()
+        border_nodes = border_nodes - 1
+        # nodo Encontrado
+        if is_goal(actual_node):
+            print('GOAL')
+            return actual_node, border_nodes, total_nodes
+        # paso el límite
+        if limit < actual_node.cost:
+            continue
+        for color in range(colors):
+            if color != actual_node.color:
+                new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
+                blank_matrix = np.zeros((dim, dim))
+                main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
+                if not is_insignificant_move(actual_node.visited, main_island):
+                    new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
+                                         actual_node, color, island_size)
+                    stack.append(new_node)
+                    border_nodes = border_nodes + 1
+                    total_nodes = total_nodes + 1
+    return None, border_nodes, total_nodes
 
 
 # funcion heuristica que devuelve la cantidad de colores restantes para poder
@@ -185,16 +218,20 @@ def a_search(root):
     queue = priorityQueue.PriorityQueue()
     queue.insert(root)
 
+    total_nodes = 1
+    border_nodes = 1
+
     while not queue.isEmpty():
         actual_node = queue.pop()
-        if is_goal(actual_node):
-            return actual_node
-        if actual_node.value == actual_node.cost:
-            return actual_node
+        border_nodes = border_nodes - 1
+        if is_goal(actual_node):  # TODO  ver si es esto o poner q la heuristica sea 0
+            print('GOAL')
+            return actual_node, border_nodes, total_nodes
+
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
             if color != actual_node.color:
-                new_state = change_color(actual_node.state, actual_node.visited, color)
+                new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
                 blank_matrix = np.zeros((dim, dim))
                 main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
                 if not is_insignificant_move(actual_node.visited, main_island):
@@ -210,10 +247,14 @@ def a_search(root):
                     new_node.set_value(new_node.cost + heuristic_val)
 
                     queue.insert(new_node)
+                    total_nodes = total_nodes + 1
+                    border_nodes = border_nodes + 1
 
 
 def greedy(root):
     current = root
+    total_nodes = 1
+    border_nodes = 0
     while not is_goal(current):
         queue = priorityQueue.PriorityQueue()
 
@@ -225,8 +266,6 @@ def greedy(root):
                 blank_matrix = np.zeros((dim, dim))
                 main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
                 if not is_insignificant_move(current.visited, main_island):
-                    # print('                 ')
-                    # print(new_state)
                     new_node = node.Node(new_state, main_island, current.cost + movement_cost,
                                          current, color, island_size)
 
@@ -237,14 +276,23 @@ def greedy(root):
 
                     new_node.set_value(heuristic_val)
                     queue.insert(new_node)
+                    total_nodes = total_nodes + 1
+                    border_nodes = border_nodes + 1
         current = queue.pop()
+        border_nodes = border_nodes - 1
 
     print('GOAL')
-    return current
+    return current, border_nodes, total_nodes
 
 
 def main():
     random_matrix = np.random.randint(0, colors, (dim, dim))
+
+    # random_matrix = [[1,2,1],[2,0,2],[0,0,1]]
+
+    # random_matrix = [[1, 2, 1], [2, 0, 2], [0, 0, 1]]
+
+    # random_matrix = [[0, 1, 1], [2, 2, 2], [1, 1, 1]]
 
     visited = np.zeros((dim, dim))
 
@@ -252,35 +300,28 @@ def main():
 
     root = node.Node(random_matrix, main_island, 0, None,
                      random_matrix[0][0], island_size)
-    # print(root.visited)
-
-    # print(bfs_search(root))
-    print('Initial state')
-    print(random_matrix)
-    print('                 ')
 
     start = time.time()
-    # goal = bfs_search(root)
-    # goal = dfs_search(root, 100)
-    # goal = greedy(root)
-    goal = a_search(root)
+    # goal, border_nodes, total_nodes = bfs_search(root)
+    goal, border_nodes, total_nodes = dfs_search_2(root, 50)
+    # goal, border_nodes, total_nodes = a_search(root)
     end = time.time()
-    print(str(end - start) + ' secs')
+
     current = goal
     while current is not None:
-        # print('#colors=' + str(heuristic1(current)))
-
-        print("LLELLELELELELELLEL")
-
         print(current.state)
         print('                 ')
         current = current.parent
+
+    print('Total cost: ' + str(goal.cost))
+    print('Total nodes: ' + str(total_nodes))
+    print('Border nodes: ' + str(border_nodes))
+    print('Processing time: ' + str(end - start) + ' secs')
 
 
 if __name__ == "__main__":
     main()
 
-    # TODO ver COUNTS DE CONSIGNA (como nodos frontera)
     # TODO testear metodos
     # TODO enlasar con front
     # TODO ver heuristicas
