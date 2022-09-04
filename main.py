@@ -6,9 +6,22 @@ import Utils.priorityQueueGreedy as priorityQueueGreedy
 import time
 import math
 
-colors = 10
-dim = 8
-heuristic = 2
+colors = int(input('Enter number of colors: '))
+dim = int(input('Enter board dimension: '))
+
+print('Options')
+print('1 - DFS')
+print('2 - BFS')
+print('3 - Greedy')
+print('4 - A*')
+search_method = int(input('Select a search-method: '))
+if search_method == 4 or search_method == 3:
+    print('Options')
+    print('1 - Number of resting colors')
+    print('2 - Steps')
+    print('3 - Steps non-admisible')
+    print('4 - Main island size')
+    heuristic = int(input('Enter heuristic: '))
 
 # arrays para movernos hacia los bloques adyacentes
 # index = 0 ---> ARRIBA
@@ -101,7 +114,7 @@ def dfs_search(actual_node, limit, border_nodes_dfs=1, total_nodes_dfs=1):
 
     # paso el límite
     if limit < 0:
-        print('limit')
+        # print('limit')
         return None, border_nodes_dfs, total_nodes_dfs
 
     # siguiente nodo
@@ -120,7 +133,7 @@ def dfs_search(actual_node, limit, border_nodes_dfs=1, total_nodes_dfs=1):
 
 
 # agrego esta opcion de dfs porque la otra no funciona bien con el limite
-def dfs_search_2(root, limit, border_nodes_dfs=1, total_nodes_dfs=1):
+def dfs_search_2(root, limit):
     border_nodes = 1
     total_nodes = 1
     stack = [root]
@@ -233,6 +246,7 @@ def heuristic4(actual_node):
     return dim * dim - actual_node.island_size
 
 
+
 def get_best_color(actual_node, perimetral_colors, numeral):
     best_node = actual_node
     if len(perimetral_colors) == 0:
@@ -337,9 +351,11 @@ def greedy(root):
 
 
 def main():
+
+
     random_matrix = np.random.randint(0, colors, (dim, dim))
 
-    print(random_matrix)
+    # print(random_matrix)
 
     # random_matrix = [[1,2,1],[2,0,2],[0,0,1]]
 
@@ -355,15 +371,21 @@ def main():
                      random_matrix[0][0], island_size)
 
     start = time.time()
-    # goal, border_nodes, total_nodes = bfs_search(root)
-    # goal, border_nodes, total_nodes = dfs_search_2(root, 50)
-    goal, border_nodes, total_nodes = a_search(root)
-    # goal, border_nodes, total_nodes = greedy(root)
+
+    if search_method == 2:
+        goal, border_nodes, total_nodes = bfs_search(root)
+    elif search_method == 3:
+        goal, border_nodes, total_nodes = a_search(root)
+    elif search_method == 4:
+        goal, border_nodes, total_nodes = greedy(root)
+    else:
+        goal, border_nodes, total_nodes = dfs_search(root, 100)
 
     end = time.time()
 
     current = goal
     while current is not None:
+        print('Chosen color: ' + str(current.color))
         print(current.state)
         print('                 ')
         current = current.parent
