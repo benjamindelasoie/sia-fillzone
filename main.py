@@ -6,9 +6,9 @@ import Utils.priorityQueueGreedy as priorityQueueGreedy
 import time
 import math
 
-colors = 5
+colors = 10
 dim = 8
-heuristic = 4
+heuristic = 2
 
 # arrays para movernos hacia los bloques adyacentes
 # index = 0 ---> ARRIBA
@@ -318,8 +318,12 @@ def greedy(root):
 
                     if heuristic == 1:
                         heuristic_val = heuristic1(new_node)
-                    else:
+                    elif heuristic == 2:
                         heuristic_val = heuristic2(new_node)
+                    elif heuristic == 3:
+                        heuristic_val = heuristic3(new_node)
+                    else:
+                        heuristic_val = heuristic4(new_node)
 
                     new_node.set_value(heuristic_val)
                     queue.insert(new_node)
