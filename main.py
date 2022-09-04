@@ -1,12 +1,14 @@
 import numpy as np
 import node
 import Utils.priorityQueue as priorityQueue
+import Utils.priorityQueueGreedy as priorityQueueGreedy
+
 import time
 import math
 
 colors = 5
-dim = 10
-heuristic = 2
+dim = 8
+heuristic = 4
 
 # arrays para movernos hacia los bloques adyacentes
 # index = 0 ---> ARRIBA
@@ -111,9 +113,11 @@ def dfs_search(actual_node, limit, border_nodes_dfs=1, total_nodes_dfs=1):
             if not is_insignificant_move(actual_node.visited, main_island):
                 new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                      actual_node, color, island_size)
-                next_node, border_nodes, total_nodes = dfs_search(new_node, limit - 1, border_nodes_dfs + 1, total_nodes_dfs + 1)
+                next_node, border_nodes, total_nodes = dfs_search(new_node, limit - 1, border_nodes_dfs + 1,
+                                                                  total_nodes_dfs + 1)
                 if next_node is not None:
                     return next_node, border_nodes, total_nodes
+
 
 # agrego esta opcion de dfs porque la otra no funciona bien con el limite
 def dfs_search_2(root, limit, border_nodes_dfs=1, total_nodes_dfs=1):
@@ -180,7 +184,8 @@ def heuristic2(actual_node):
             new_state = change_color(father.state, father.visited, color)
             blank_matrix = np.zeros((dim, dim))
             main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-            if not is_insignificant_move(father.visited, main_island):
+            # if not is_insignificant_move(father.visited, main_island):
+            if father.island_size < island_size:
                 perimetral_colors.append(color)
 
     sub_value, best_node = get_best_color(actual_node, perimetral_colors, numerals[1])
@@ -190,6 +195,42 @@ def heuristic2(actual_node):
     value += sub_sub_value
 
     return value
+
+
+def heuristic3(actual_node):
+    if is_goal(actual_node):
+        return 0
+
+    # los nodos vecinos del padre
+    perimetral_colors = []
+    father = actual_node.parent
+
+    steps = 3
+    num = (colors - 1) / steps
+    numerals = [dim * dim, dim * dim * 0.66, dim * dim * 0.33]
+    value = numerals[0] / actual_node.island_size
+
+    # miro los otros hijos del padre
+    for color in range(colors):
+        if color != father.color and color != actual_node.color:
+            new_state = change_color(father.state, father.visited, color)
+            blank_matrix = np.zeros((dim, dim))
+            main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
+            # if not is_insignificant_move(father.visited, main_island):
+            if father.island_size < island_size:
+                perimetral_colors.append(color)
+
+    sub_value, best_node = get_best_color(actual_node, perimetral_colors, numerals[1])
+    value += sub_value
+
+    sub_sub_value, best_node = get_best_color(best_node, perimetral_colors, numerals[2])
+    value += sub_sub_value
+
+    return value
+
+
+def heuristic4(actual_node):
+    return dim * dim - actual_node.island_size
 
 
 def get_best_color(actual_node, perimetral_colors, numeral):
@@ -224,7 +265,7 @@ def a_search(root):
     while not queue.isEmpty():
         actual_node = queue.pop()
         border_nodes = border_nodes - 1
-        if is_goal(actual_node):  # TODO  ver si es esto o poner q la heuristica sea 0
+        if is_goal(actual_node):
             print('GOAL')
             return actual_node, border_nodes, total_nodes
 
@@ -234,17 +275,23 @@ def a_search(root):
                 new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
                 blank_matrix = np.zeros((dim, dim))
                 main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-                if not is_insignificant_move(actual_node.visited, main_island):
-
+                # if not is_insignificant_move(actual_node.visited, main_island):
+                if actual_node.island_size < island_size:
                     new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                          actual_node, color, island_size)
 
                     if heuristic == 1:
                         heuristic_val = heuristic1(new_node)
-                    else:
+                    elif heuristic == 2:
                         heuristic_val = heuristic2(new_node)
+                    elif heuristic == 3:
+                        heuristic_val = heuristic3(new_node)
+                    else:
+                        heuristic_val = heuristic4(new_node)
 
-                    new_node.set_value(new_node.cost + heuristic_val)
+                    new_node.set_value(heuristic_val)
+
+                    print(heuristic_val)
 
                     queue.insert(new_node)
                     total_nodes = total_nodes + 1
@@ -256,7 +303,7 @@ def greedy(root):
     total_nodes = 1
     border_nodes = 0
     while not is_goal(current):
-        queue = priorityQueue.PriorityQueue()
+        queue = priorityQueueGreedy.PriorityQueue()
 
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
@@ -288,6 +335,8 @@ def greedy(root):
 def main():
     random_matrix = np.random.randint(0, colors, (dim, dim))
 
+    print(random_matrix)
+
     # random_matrix = [[1,2,1],[2,0,2],[0,0,1]]
 
     # random_matrix = [[1, 2, 1], [2, 0, 2], [0, 0, 1]]
@@ -303,8 +352,10 @@ def main():
 
     start = time.time()
     # goal, border_nodes, total_nodes = bfs_search(root)
-    goal, border_nodes, total_nodes = dfs_search_2(root, 50)
-    # goal, border_nodes, total_nodes = a_search(root)
+    # goal, border_nodes, total_nodes = dfs_search_2(root, 50)
+    goal, border_nodes, total_nodes = a_search(root)
+    # goal, border_nodes, total_nodes = greedy(root)
+
     end = time.time()
 
     current = goal
