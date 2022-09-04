@@ -7,7 +7,7 @@ class Node:
         self.parent = parent
         self.island_size = island_size
         self.cost = cost
-        self.value = 0
+        self.value = 1000
         # valor que se utiliza en los metodos de busqueda informados
         # si es a_search --> value = cost + heuristica
         # si es greedy ----> value = heuristica

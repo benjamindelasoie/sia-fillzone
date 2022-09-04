@@ -2,10 +2,11 @@ import numpy as np
 import node
 import Utils.priorityQueue as priorityQueue
 import time
+import math
 
 colors = 5
 dim = 10
-heuristic = 1
+heuristic = 2
 
 # arrays para movernos hacia los bloques adyacentes
 # index = 0 ---> ARRIBA
@@ -37,7 +38,8 @@ def get_main_island_rec(matrix, visited, i, j, color, island_size):
 
 
 # cambia el color de la isla principal
-def change_color(matrix, visited, color):
+def change_color(state, visited, color):
+    matrix = np.copy(state)
     for i in range(dim):
         for j in range(dim):
             if visited[i][j]:
@@ -127,7 +129,56 @@ def heuristic1(actual_node):
 
 # ¿funcion heuristica?
 def heuristic2(actual_node):
-    return (dim * dim) - actual_node.island_size
+    if is_goal(actual_node):
+        return 0
+
+    # los nodos vecinos del padre
+    perimetral_colors = []
+    father = actual_node.parent
+
+    steps = 3
+    num = (colors - 1) / steps
+    numerals = [math.ceil(num * 3), math.ceil(num * 2), math.ceil(num)]
+    value = numerals[0] / actual_node.island_size
+
+    # miro los otros hijos del padre
+    for color in range(colors):
+        if color != father.color and color != actual_node.color:
+            new_state = change_color(father.state, father.visited, color)
+            blank_matrix = np.zeros((dim, dim))
+            main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
+            if not is_insignificant_move(father.visited, main_island):
+                perimetral_colors.append(color)
+
+    sub_value, best_node = get_best_color(actual_node, perimetral_colors, numerals[1])
+    value += sub_value
+
+    sub_sub_value, best_node = get_best_color(best_node, perimetral_colors, numerals[2])
+    value += sub_sub_value
+
+    return value
+
+
+def get_best_color(actual_node, perimetral_colors, numeral):
+    best_node = actual_node
+    if len(perimetral_colors) == 0:
+        return 0, None
+
+    for perimetral_color in perimetral_colors:
+        new_state = change_color(actual_node.state, actual_node.visited, perimetral_color)
+        blank_matrix = np.zeros((dim, dim))
+        main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, perimetral_color, 0)
+        if best_node.island_size < island_size:
+            new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
+                                 actual_node, perimetral_color, island_size)
+            best_node = new_node
+    # no cambio el tamaño por lo que no tiene vecinos o algo anda mal
+    if best_node.island_size == actual_node.island_size:
+        return -1, None
+
+    perimetral_colors.remove(best_node.color)
+
+    return numeral / best_node.island_size, best_node
 
 
 def a_search(root):
@@ -136,11 +187,10 @@ def a_search(root):
 
     while not queue.isEmpty():
         actual_node = queue.pop()
-        if is_goal(actual_node):  # TODO  ver si es esto o poner q la heuristica sea 0
-            print('GOAL')
-            print(actual_node.state)
+        if is_goal(actual_node):
             return actual_node
-
+        if actual_node.value == actual_node.cost:
+            return actual_node
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
             if color != actual_node.color:
@@ -148,8 +198,7 @@ def a_search(root):
                 blank_matrix = np.zeros((dim, dim))
                 main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
                 if not is_insignificant_move(actual_node.visited, main_island):
-                    print('                 ')
-                    print(new_state)
+
                     new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                          actual_node, color, island_size)
 
@@ -159,6 +208,7 @@ def a_search(root):
                         heuristic_val = heuristic2(new_node)
 
                     new_node.set_value(new_node.cost + heuristic_val)
+
                     queue.insert(new_node)
 
 
@@ -210,14 +260,18 @@ def main():
     print('                 ')
 
     start = time.time()
-    goal = bfs_search(root)
+    # goal = bfs_search(root)
     # goal = dfs_search(root, 100)
     # goal = greedy(root)
+    goal = a_search(root)
     end = time.time()
     print(str(end - start) + ' secs')
     current = goal
     while current is not None:
         # print('#colors=' + str(heuristic1(current)))
+
+        print("LLELLELELELELELLEL")
+
         print(current.state)
         print('                 ')
         current = current.parent
@@ -230,5 +284,4 @@ if __name__ == "__main__":
     # TODO testear metodos
     # TODO enlasar con front
     # TODO ver heuristicas
-    # TODO tiempo Poceso
     # TODO README
