@@ -24,12 +24,12 @@ Luego al ejecutar el programa se puede escoger el tamaño del tablero, la cantid
 ### Métodos de Búsqueda
 1. DFS
 2. BFS
-3. Greedy
-4. A*
+3. A*
+4. Greedy
 
 ### Heurísticas
 1. Cantidad de colores restantes
 2. Pasos
 3. Pasos (no admisible)
-4. Tamaño de la isla principal
+4. Cantidad de bloques restantes
 
