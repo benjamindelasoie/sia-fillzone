@@ -2,9 +2,11 @@ import numpy as np
 import node
 import Utils.priorityQueue as priorityQueue
 import Utils.priorityQueueGreedy as priorityQueueGreedy
-
 import time
 import math
+import Utils.fillzoneUtils as fillzoneUtils
+
+movement_cost = 1
 
 colors = int(input('Enter number of colors: '))
 dim = int(input('Enter board dimension: '))
@@ -12,70 +14,16 @@ dim = int(input('Enter board dimension: '))
 print('Options')
 print('1 - DFS')
 print('2 - BFS')
-print('3 - Greedy')
-print('4 - A*')
+print('3 - A*')
+print('4 - Greedy')
 search_method = int(input('Select a search-method: '))
 if search_method == 4 or search_method == 3:
     print('Options')
-    print('1 - Number of resting colors')
+    print('1 - Amount of resting colors')
     print('2 - Steps')
     print('3 - Steps non-admisible')
-    print('4 - Main island size')
+    print('4 - Amount of resting blocks')
     heuristic = int(input('Enter heuristic: '))
-
-# arrays para movernos hacia los bloques adyacentes
-# index = 0 ---> ARRIBA
-# index = 1 ---> IZQUIERDA
-# index = 2 ---> DERECHA
-# index = 3 ---> ABAJO
-row = [-1, 0, 0, 1]
-col = [0, -1, 1, 0]
-movement_cost = 1
-
-
-# devuelve una matriz con 1's donde se ubica nuestra isla principal
-def get_main_island_rec(matrix, visited, i, j, color, island_size):
-    if i < 0 or j < 0 or i >= dim or j >= dim or visited[i][j]:
-        return visited, island_size
-
-    if matrix[i][j] == color:
-        visited[i][j] = True
-        island_size += 1
-        new_visited = visited
-
-        for k in range(4):
-            new_visited, island_size = get_main_island_rec(matrix, new_visited, i + row[k], j + col[k],
-                                                           color, island_size)
-
-        return new_visited, island_size
-
-    return visited, island_size
-
-
-# cambia el color de la isla principal
-def change_color(state, visited, color):
-    matrix = np.copy(state)
-    for i in range(dim):
-        for j in range(dim):
-            if visited[i][j]:
-                matrix[i][j] = color
-    return matrix
-
-
-def is_goal(actual_node):
-    for i in range(dim):
-        for j in range(dim):
-            if actual_node.state[i][j] != actual_node.color:
-                return False
-    return True
-
-
-def is_insignificant_move(visited, new_visited):
-    for i in range(dim):
-        for j in range(dim):
-            if visited[i][j] != new_visited[i][j]:
-                return False
-    return True
 
 
 # armo una cola y voy sacando el nodo que hace más tiempo se encuentra en la cola
@@ -87,17 +35,18 @@ def bfs_search(root):
     while queue:
         actual_node = queue.pop(0)
         border_nodes = border_nodes - 1
-        if is_goal(actual_node):
+
+        if fillzoneUtils.is_goal(actual_node, dim):
             print('GOAL')
             return actual_node, border_nodes, total_nodes
 
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
             if color != actual_node.color:
-                new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
+                new_state = fillzoneUtils.change_color(np.copy(actual_node.state), actual_node.visited, color, dim)
                 blank_matrix = np.zeros((dim, dim))
-                main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-                if not is_insignificant_move(actual_node.visited, main_island):
+                main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
+                if not fillzoneUtils.is_insignificant_move(actual_node.visited, main_island, dim):
                     new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                          actual_node, color, island_size)
                     queue.append(new_node)
@@ -105,35 +54,29 @@ def bfs_search(root):
                     border_nodes = border_nodes + 1
 
 
-def dfs_search(actual_node, limit, border_nodes_dfs=1, total_nodes_dfs=1):
+def dfs_search(actual_node, border_nodes_dfs=1, total_nodes_dfs=1):
     border_nodes_dfs = border_nodes_dfs - 1
     # nodo Encontrado
-    if is_goal(actual_node):
+    if fillzoneUtils.is_goal(actual_node, dim):
         print('GOAL')
         return actual_node, border_nodes_dfs, total_nodes_dfs
-
-    # paso el límite
-    if limit < 0:
-        # print('limit')
-        return None, border_nodes_dfs, total_nodes_dfs
 
     # siguiente nodo
     for color in range(colors):
         if color != actual_node.color:
-            new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
+            new_state = fillzoneUtils.change_color(np.copy(actual_node.state), actual_node.visited, color, dim)
             blank_matrix = np.zeros((dim, dim))
-            main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-            if not is_insignificant_move(actual_node.visited, main_island):
+            main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
+            if not fillzoneUtils.is_insignificant_move(actual_node.visited, main_island, dim):
                 new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                      actual_node, color, island_size)
-                next_node, border_nodes, total_nodes = dfs_search(new_node, limit - 1, border_nodes_dfs + 1,
+                next_node, border_nodes, total_nodes = dfs_search(new_node, border_nodes_dfs + 1,
                                                                   total_nodes_dfs + 1)
                 if next_node is not None:
                     return next_node, border_nodes, total_nodes
 
 
-# agrego esta opcion de dfs porque la otra no funciona bien con el limite
-def dfs_search_2(root, limit):
+def dfs_search_iter(root):
     border_nodes = 1
     total_nodes = 1
     stack = [root]
@@ -142,18 +85,16 @@ def dfs_search_2(root, limit):
         actual_node = stack.pop()
         border_nodes = border_nodes - 1
         # nodo Encontrado
-        if is_goal(actual_node):
+        if fillzoneUtils.is_goal(actual_node, dim):
             print('GOAL')
             return actual_node, border_nodes, total_nodes
-        # paso el límite
-        if limit < actual_node.cost:
-            continue
+
         for color in range(colors):
             if color != actual_node.color:
-                new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
+                new_state = fillzoneUtils.change_color(np.copy(actual_node.state), actual_node.visited, color, dim)
                 blank_matrix = np.zeros((dim, dim))
-                main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-                if not is_insignificant_move(actual_node.visited, main_island):
+                main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
+                if not fillzoneUtils.is_insignificant_move(actual_node.visited, main_island, dim):
                     new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                          actual_node, color, island_size)
                     stack.append(new_node)
@@ -177,9 +118,10 @@ def heuristic1(actual_node):
     return color_list.__len__()
 
 
-# ¿funcion heuristica?
+# Relación de cantidad de bloques ganados por cambio de color y
+# cantidad de boques ganados al cambiar por color de competidor
 def heuristic2(actual_node):
-    if is_goal(actual_node):
+    if fillzoneUtils.is_goal(actual_node, dim):
         return 0
 
     # los nodos vecinos del padre
@@ -194,24 +136,26 @@ def heuristic2(actual_node):
     # miro los otros hijos del padre
     for color in range(colors):
         if color != father.color and color != actual_node.color:
-            new_state = change_color(father.state, father.visited, color)
+            new_state = fillzoneUtils.change_color(father.state, father.visited, color, dim)
             blank_matrix = np.zeros((dim, dim))
-            main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
+            main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
             # if not is_insignificant_move(father.visited, main_island):
             if father.island_size < island_size:
                 perimetral_colors.append(color)
 
-    sub_value, best_node = get_best_color(actual_node, perimetral_colors, numerals[1])
+    sub_value, best_node = fillzoneUtils.get_best_color(actual_node, perimetral_colors, numerals[1], dim)
     value += sub_value
 
-    sub_sub_value, best_node = get_best_color(best_node, perimetral_colors, numerals[2])
+    sub_sub_value, best_node = fillzoneUtils.get_best_color(best_node, perimetral_colors, numerals[2], dim)
     value += sub_sub_value
 
     return value
 
 
+# Relación de cantidad de bloques ganados por cambio de color y
+# cantidad de boques ganados al cambiar por color de competidor
 def heuristic3(actual_node):
-    if is_goal(actual_node):
+    if fillzoneUtils.is_goal(actual_node, dim):
         return 0
 
     # los nodos vecinos del padre
@@ -226,47 +170,24 @@ def heuristic3(actual_node):
     # miro los otros hijos del padre
     for color in range(colors):
         if color != father.color and color != actual_node.color:
-            new_state = change_color(father.state, father.visited, color)
+            new_state = fillzoneUtils.change_color(father.state, father.visited, color, dim)
             blank_matrix = np.zeros((dim, dim))
-            main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-            # if not is_insignificant_move(father.visited, main_island):
+            main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
             if father.island_size < island_size:
                 perimetral_colors.append(color)
 
-    sub_value, best_node = get_best_color(actual_node, perimetral_colors, numerals[1])
+    sub_value, best_node = fillzoneUtils.get_best_color(actual_node, perimetral_colors, numerals[1], dim)
     value += sub_value
 
-    sub_sub_value, best_node = get_best_color(best_node, perimetral_colors, numerals[2])
+    sub_sub_value, best_node = fillzoneUtils.get_best_color(best_node, perimetral_colors, numerals[2], dim)
     value += sub_sub_value
 
     return value
 
-
+# Cantidad de bloques restantes
 def heuristic4(actual_node):
     return dim * dim - actual_node.island_size
 
-
-
-def get_best_color(actual_node, perimetral_colors, numeral):
-    best_node = actual_node
-    if len(perimetral_colors) == 0:
-        return 0, None
-
-    for perimetral_color in perimetral_colors:
-        new_state = change_color(actual_node.state, actual_node.visited, perimetral_color)
-        blank_matrix = np.zeros((dim, dim))
-        main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, perimetral_color, 0)
-        if best_node.island_size < island_size:
-            new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
-                                 actual_node, perimetral_color, island_size)
-            best_node = new_node
-    # no cambio el tamaño por lo que no tiene vecinos o algo anda mal
-    if best_node.island_size == actual_node.island_size:
-        return -1, None
-
-    perimetral_colors.remove(best_node.color)
-
-    return numeral / best_node.island_size, best_node
 
 
 def a_search(root):
@@ -279,21 +200,19 @@ def a_search(root):
     while not queue.isEmpty():
         actual_node = queue.pop()
         border_nodes = border_nodes - 1
-        if is_goal(actual_node):
+        if fillzoneUtils.is_goal(actual_node, dim):
             print('GOAL')
             return actual_node, border_nodes, total_nodes
 
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
             if color != actual_node.color:
-                new_state = change_color(np.copy(actual_node.state), actual_node.visited, color)
+                new_state = fillzoneUtils.change_color(np.copy(actual_node.state), actual_node.visited, color, dim)
                 blank_matrix = np.zeros((dim, dim))
-                main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-                # if not is_insignificant_move(actual_node.visited, main_island):
+                main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
                 if actual_node.island_size < island_size:
                     new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
                                          actual_node, color, island_size)
-
                     if heuristic == 1:
                         heuristic_val = heuristic1(new_node)
                     elif heuristic == 2:
@@ -316,17 +235,17 @@ def greedy(root):
     current = root
     total_nodes = 1
     border_nodes = 0
-    while not is_goal(current):
+    while not fillzoneUtils.is_goal(current, dim):
         queue = priorityQueueGreedy.PriorityQueue()
 
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
             if color != current.color:
                 aux = np.copy(current.state)
-                new_state = change_color(aux, current.visited, color)
+                new_state = fillzoneUtils.change_color(aux, current.visited, color, dim)
                 blank_matrix = np.zeros((dim, dim))
-                main_island, island_size = get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0)
-                if not is_insignificant_move(current.visited, main_island):
+                main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
+                if not fillzoneUtils.is_insignificant_move(current.visited, main_island, dim):
                     new_node = node.Node(new_state, main_island, current.cost + movement_cost,
                                          current, color, island_size)
 
@@ -352,20 +271,11 @@ def greedy(root):
 
 def main():
 
-
     random_matrix = np.random.randint(0, colors, (dim, dim))
-
-    # print(random_matrix)
-
-    # random_matrix = [[1,2,1],[2,0,2],[0,0,1]]
-
-    # random_matrix = [[1, 2, 1], [2, 0, 2], [0, 0, 1]]
-
-    # random_matrix = [[0, 1, 1], [2, 2, 2], [1, 1, 1]]
 
     visited = np.zeros((dim, dim))
 
-    main_island, island_size = get_main_island_rec(random_matrix, visited, 0, 0, random_matrix[0][0], 0)
+    main_island, island_size = fillzoneUtils.get_main_island_rec(random_matrix, visited, 0, 0, random_matrix[0][0], 0, dim)
 
     root = node.Node(random_matrix, main_island, 0, None,
                      random_matrix[0][0], island_size)
@@ -379,7 +289,7 @@ def main():
     elif search_method == 4:
         goal, border_nodes, total_nodes = greedy(root)
     else:
-        goal, border_nodes, total_nodes = dfs_search(root, 100)
+        goal, border_nodes, total_nodes = dfs_search(root)
 
     end = time.time()
 
@@ -399,7 +309,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-    # TODO testear metodos
-    # TODO enlasar con front
-    # TODO ver heuristicas
-    # TODO README
