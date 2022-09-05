@@ -6,8 +6,8 @@ import Utils.priorityQueueGreedy as priorityQueueGreedy
 import time
 import math
 
-colors = 10
-dim = 8
+colors = 5
+dim = 10
 heuristic = 2
 
 # arrays para movernos hacia los bloques adyacentes
@@ -173,7 +173,7 @@ def heuristic2(actual_node):
     perimetral_colors = []
     father = actual_node.parent
 
-    steps = 3
+    steps = 6
     num = (colors - 1) / steps
     numerals = [math.ceil(num * 3), math.ceil(num * 2), math.ceil(num)]
     value = numerals[0] / actual_node.island_size
@@ -356,9 +356,9 @@ def main():
 
     start = time.time()
     # goal, border_nodes, total_nodes = bfs_search(root)
-    # goal, border_nodes, total_nodes = dfs_search_2(root, 50)
-    goal, border_nodes, total_nodes = a_search(root)
-    # goal, border_nodes, total_nodes = greedy(root)
+    # goal, border_nodes, total_nodes = dfs_search_2(root, 500)
+    # goal, border_nodes, total_nodes = a_search(root)
+    goal, border_nodes, total_nodes = greedy(root)
 
     end = time.time()
 
@@ -377,7 +377,5 @@ def main():
 if __name__ == "__main__":
     main()
 
-    # TODO testear metodos
-    # TODO enlasar con front
-    # TODO ver heuristicas
+
     # TODO README
