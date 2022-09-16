@@ -20,9 +20,10 @@ search_method = int(input('Select a search-method: '))
 if search_method == 4 or search_method == 3:
     print('Options')
     print('1 - Amount of resting colors')
-    print('2 - Steps')
+    print('2 - blocks left')
     print('3 - Steps non-admisible')
-    print('4 - Amount of resting blocks')
+    print('4 - blocks left non-admisible')
+    print('5 - Steps')
     heuristic = int(input('Enter heuristic: '))
 
 
@@ -121,35 +122,13 @@ def heuristic1(actual_node):
 # Relación de cantidad de bloques ganados por cambio de color y
 # cantidad de boques ganados al cambiar por color de competidor
 def heuristic2(actual_node):
-    if fillzoneUtils.is_goal(actual_node, dim):
+    domination_left = dim * dim - actual_node.island_size
+    if domination_left == 0:
         return 0
+    percentage = domination_left * (100/dim*dim)
+    range_values = math.ceil(100 / colors)
+    return math.ceil(percentage/range_values)
 
-    # los nodos vecinos del padre
-    perimetral_colors = []
-    father = actual_node.parent
-
-    steps = 3
-    num = (colors - 1) / steps
-    numerals = [math.ceil(num * 3), math.ceil(num * 2), math.ceil(num)]
-    value = numerals[0] / actual_node.island_size
-
-    # miro los otros hijos del padre
-    for color in range(colors):
-        if color != father.color and color != actual_node.color:
-            new_state = fillzoneUtils.change_color(father.state, father.visited, color, dim)
-            blank_matrix = np.zeros((dim, dim))
-            main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
-            # if not is_insignificant_move(father.visited, main_island):
-            if father.island_size < island_size:
-                perimetral_colors.append(color)
-
-    sub_value, best_node = fillzoneUtils.get_best_color(actual_node, perimetral_colors, numerals[1], dim)
-    value += sub_value
-
-    sub_sub_value, best_node = fillzoneUtils.get_best_color(best_node, perimetral_colors, numerals[2], dim)
-    value += sub_sub_value
-
-    return value
 
 
 # Relación de cantidad de bloques ganados por cambio de color y
@@ -188,7 +167,36 @@ def heuristic3(actual_node):
 def heuristic4(actual_node):
     return dim * dim - actual_node.island_size
 
+def heuristic5(actual_node):
+    if fillzoneUtils.is_goal(actual_node, dim):
+        return 0
 
+    # los nodos vecinos del padre
+    perimetral_colors = []
+    father = actual_node.parent
+
+    steps = 3
+    num = (colors - 1) / steps
+    numerals = [math.ceil(num * 3), math.ceil(num * 2), math.ceil(num)]
+    value = numerals[0] / actual_node.island_size
+
+    # miro los otros hijos del padre
+    for color in range(colors):
+        if color != father.color and color != actual_node.color:
+            new_state = fillzoneUtils.change_color(father.state, father.visited, color, dim)
+            blank_matrix = np.zeros((dim, dim))
+            main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0, dim)
+            # if not is_insignificant_move(father.visited, main_island):
+            if father.island_size < island_size:
+                perimetral_colors.append(color)
+
+    sub_value, best_node = fillzoneUtils.get_best_color(actual_node, perimetral_colors, numerals[1], dim)
+    value += sub_value
+
+    sub_sub_value, best_node = fillzoneUtils.get_best_color(best_node, perimetral_colors, numerals[2], dim)
+    value += sub_sub_value
+
+    return value
 
 def a_search(root):
     queue = priorityQueue.PriorityQueue()
