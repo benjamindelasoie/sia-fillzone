@@ -125,9 +125,9 @@ def heuristic2(actual_node):
     domination_left = dim * dim - actual_node.island_size
     if domination_left == 0:
         return 0
-    percentage = domination_left * (100/dim*dim)
-    range_values = math.ceil(100 / colors)
-    return math.ceil(percentage/range_values)
+    percentage = domination_left * (100/(dim*dim))
+    range_values = math.ceil(100 / 10)
+    return percentage/range_values
 
 
 
@@ -232,7 +232,9 @@ def a_search(root):
 
                     new_node.set_value(heuristic_val)
 
-                    print(heuristic_val)
+                    if fillzoneUtils.is_goal(new_node, dim):
+                        print('GOAL')
+                        return actual_node, border_nodes, total_nodes
 
                     queue.insert(new_node)
                     total_nodes = total_nodes + 1

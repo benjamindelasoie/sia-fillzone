@@ -112,10 +112,10 @@ def heuristic2(actual_node, dimension):
     domination_left = dimension * dimension - actual_node.island_size
     if domination_left == 0:
         return 0
-    percentage = domination_left * (100 / dimension * dimension)
-    range_values = math.ceil(100 / colors)
-    return math.ceil(percentage / range_values)
-
+    percentage = domination_left * (100 / (dimension * dimension))
+    range_values = math.ceil(100 / 10)
+    value = percentage / range_values
+    return value
 
 # Relación de cantidad de bloques ganados por cambio de color y
 # cantidad de boques ganados al cambiar por color de competidor
@@ -193,14 +193,15 @@ def a_search(root, dimension, heuristic):
     queue = priorityQueue.PriorityQueue()
     queue.insert(root)
 
+    if fillzoneUtils.is_goal(root, dimension):
+        return root, 1, 1
+
     total_nodes = 1
     border_nodes = 1
 
     while not queue.isEmpty():
         actual_node = queue.pop()
         border_nodes = border_nodes - 1
-        if fillzoneUtils.is_goal(actual_node, dimension):
-            return actual_node, border_nodes, total_nodes
 
         # por cada color veo como queda la matriz al escogerlo
         for color in range(colors):
@@ -215,6 +216,9 @@ def a_search(root, dimension, heuristic):
                                          actual_node, color, island_size)
                     if heuristic == 1:
                         heuristic_val = heuristic1(new_node, dimension)
+
+                        # print(heuristic_val)
+
                     elif heuristic == 2:
                         heuristic_val = heuristic2(new_node, dimension)
                     elif heuristic == 3:
@@ -225,11 +229,12 @@ def a_search(root, dimension, heuristic):
                         heuristic_val = heuristic5(new_node)
 
                     new_node.set_value(heuristic_val)
-
-
-                    queue.insert(new_node)
                     total_nodes = total_nodes + 1
                     border_nodes = border_nodes + 1
+
+                    if heuristic_val == 0:
+                        return new_node, border_nodes, total_nodes
+                    queue.insert(new_node)
 
 
 def greedy(root, dimension, heuristic):
@@ -340,7 +345,7 @@ def run_all():
         goals[iteration], border_nodes[iteration], total_nodes[iteration] = greedy(root, dimension, 4)
         total_times[iteration] = time.time() - timer
         iteration += 1
-        #        goals[2], border_nodes[2], total_nodes[2] = greedy(root, dimension, 5)
+        #       goals[2], border_nodes[2], total_nodes[2] = greedy(root, dimension, 5)
 
 
         timer = time.time()
