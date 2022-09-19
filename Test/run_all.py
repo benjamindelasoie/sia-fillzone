@@ -9,7 +9,7 @@ import Utils.fillzoneUtils as fillzoneUtils
 movement_cost = 1
 
 colors = 6
-dim = [4, 6, 8, 14]
+dim = [4, 6, 8]
 
 
 # armo una cola y voy sacando el nodo que hace más tiempo se encuentra en la cola
@@ -189,6 +189,44 @@ def heuristic5(actual_node, dimension):
     return value
 
 
+
+reduce_color=2
+def heuristic6(actual_node, dim):
+    two_color_matrix = np.copy(actual_node.state)
+    for i in range(dim):
+        for j in range(dim):
+            two_color_matrix[i][j] = two_color_matrix[i][j] % reduce_color
+
+    visited = np.zeros((dim, dim))
+
+    main_island, island_size = fillzoneUtils.get_main_island_rec(two_color_matrix, visited, 0, 0, two_color_matrix[0][0], 0,
+                                                                 dim)
+
+    root = node.Node(two_color_matrix, main_island, 0, None,
+                     two_color_matrix[0][0], island_size)
+
+    queue = [root]
+
+    while queue:
+        actual_node = queue.pop(0)
+
+        if fillzoneUtils.is_goal(actual_node, dim):
+            return actual_node.cost
+
+        # por cada color veo como queda la matriz al escogerlo
+        for color in range(reduce_color):
+            if color != actual_node.color:
+                new_state = fillzoneUtils.change_color(np.copy(actual_node.state), actual_node.visited, color, dim)
+                blank_matrix = np.zeros((dim, dim))
+                main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0,
+                                                                             dim)
+                if not fillzoneUtils.is_insignificant_move(actual_node.visited, main_island, dim):
+                    new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
+                                         actual_node, color, island_size)
+                    queue.append(new_node)
+
+
+
 def a_search(root, dimension, heuristic):
     queue = priorityQueue.PriorityQueue()
     queue.insert(root)
@@ -225,8 +263,10 @@ def a_search(root, dimension, heuristic):
                         heuristic_val = heuristic3(new_node, dimension)
                     elif heuristic == 4:
                         heuristic_val = heuristic4(new_node, dimension)
+                    elif heuristic == 5:
+                        heuristic_val = heuristic5(new_node, dimension)
                     else:
-                        heuristic_val = heuristic5(new_node)
+                        heuristic_val = heuristic6(new_node, dimension)
 
                     new_node.set_value(heuristic_val)
                     total_nodes = total_nodes + 1
@@ -264,8 +304,10 @@ def greedy(root, dimension, heuristic):
                         heuristic_val = heuristic3(new_node, dimension)
                     elif heuristic == 4:
                         heuristic_val = heuristic4(new_node, dimension)
-                    else:
+                    elif heuristic == 5:
                         heuristic_val = heuristic5(new_node, dimension)
+                    else:
+                        heuristic_val = heuristic6(new_node, dimension)
 
                     new_node.set_value(heuristic_val)
                     queue.insert(new_node)
@@ -295,13 +337,14 @@ def run_all():
         root = node.Node(random_matrix, main_island, 0, None,
                          random_matrix[0][0], island_size)
 
-        goals = [None] * 10
-        border_nodes = [0] * 10
-        total_nodes = [0] * 10
-        total_times = [0] * 10  
+        goals = [None] * 12
+        border_nodes = [0] * 12
+        total_nodes = [0] * 12
+        total_times = [0] * 12
 
-        prints = ["A* HEURISTIC 1", "A* HEURISTIC 2", "A* HEURISTIC 3", "A* HEURISTIC 4", "GREEDY HEURISTIC 1",
-                  "GREEDY HEURISTIC 2", "GREEDY HEURISTIC 3", "GREEDY HEURISTIC 4", "DFS", "BFS"]
+        prints = ["A* HEURISTIC 1", "A* HEURISTIC 2", "A* HEURISTIC 3", "A* HEURISTIC 4", "A* HEURISTIC 6",
+                  "GREEDY HEURISTIC 1", "GREEDY HEURISTIC 2", "GREEDY HEURISTIC 3", "GREEDY HEURISTIC 4",
+                  "GREEDY HEURISTIC 6", "DFS", "BFS"]
 
         iteration = 0
         timer = time.time()
@@ -325,6 +368,11 @@ def run_all():
         iteration += 1
         #        goals[1], border_nodes[1], total_nodes[1] = a_search(root, dimension, 5)
 
+        timer = time.time()
+        goals[iteration], border_nodes[iteration], total_nodes[iteration] = a_search(root, dimension, 6)
+        total_times[iteration] = time.time() - timer
+        iteration += 1
+
 
         timer = time.time()
         goals[iteration], border_nodes[iteration], total_nodes[iteration] = greedy(root, dimension, 1)
@@ -347,6 +395,11 @@ def run_all():
         iteration += 1
         #       goals[2], border_nodes[2], total_nodes[2] = greedy(root, dimension, 5)
 
+        timer = time.time()
+        goals[iteration], border_nodes[iteration], total_nodes[iteration] = greedy(root, dimension, 6)
+        total_times[iteration] = time.time() - timer
+        iteration += 1
+
 
         timer = time.time()
         goals[iteration], border_nodes[iteration], total_nodes[iteration] = dfs_search(root, dimension=dimension)
@@ -358,7 +411,7 @@ def run_all():
        #  goals[iter], border_nodes[iter], total_nodes[iter] = bfs_search(root, dimension)
         total_times[iteration] = time.time() - timer
 
-        for i in range(9):
+        for i in range(11):
             print(prints[i])
             print(total_times[i])
 

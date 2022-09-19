@@ -198,6 +198,45 @@ def heuristic5(actual_node):
 
     return value
 
+
+reduce_color = 3
+# cantidad de movimientos necesarios para llegar al goal en una matriz equivalente a la
+# actual pero de 2 o 3 colores (depende de reduce_color)
+def heuristic6(actual_node):
+    two_color_matrix = np.copy(actual_node.state)
+    for i in range(dim):
+        for j in range(dim):
+            two_color_matrix[i][j] = two_color_matrix[i][j] % reduce_color
+
+    visited = np.zeros((dim, dim))
+
+    main_island, island_size = fillzoneUtils.get_main_island_rec(two_color_matrix, visited, 0, 0, two_color_matrix[0][0], 0,
+                                                                 dim)
+
+    root = node.Node(two_color_matrix, main_island, 0, None,
+                     two_color_matrix[0][0], island_size)
+
+    queue = [root]
+
+    while queue:
+        actual_node = queue.pop(0)
+
+        if fillzoneUtils.is_goal(actual_node, dim):
+            return actual_node.cost
+
+        # por cada color veo como queda la matriz al escogerlo
+        for color in range(reduce_color):
+            if color != actual_node.color:
+                new_state = fillzoneUtils.change_color(np.copy(actual_node.state), actual_node.visited, color, dim)
+                blank_matrix = np.zeros((dim, dim))
+                main_island, island_size = fillzoneUtils.get_main_island_rec(new_state, blank_matrix, 0, 0, color, 0,
+                                                                             dim)
+                if not fillzoneUtils.is_insignificant_move(actual_node.visited, main_island, dim):
+                    new_node = node.Node(new_state, main_island, actual_node.cost + movement_cost,
+                                         actual_node, color, island_size)
+                    queue.append(new_node)
+
+
 def a_search(root):
     queue = priorityQueue.PriorityQueue()
     queue.insert(root)
@@ -228,7 +267,7 @@ def a_search(root):
                     elif heuristic == 3:
                         heuristic_val = heuristic3(new_node)
                     else:
-                        heuristic_val = heuristic4(new_node)
+                        heuristic_val = heuristic7(new_node)
 
                     new_node.set_value(heuristic_val)
 
@@ -314,6 +353,22 @@ def main():
     print('Total nodes: ' + str(total_nodes))
     print('Border nodes: ' + str(border_nodes))
     print('Processing time: ' + str(end - start) + ' secs')
+
+
+
+def main2():
+    random_matrix = np.random.randint(0, colors, (dim, dim))
+
+    visited = np.zeros((dim, dim))
+
+    main_island, island_size = fillzoneUtils.get_main_island_rec(random_matrix, visited, 0, 0, random_matrix[0][0], 0,
+                                                                 dim)
+
+    root = node.Node(random_matrix, main_island, 0, None,
+                     random_matrix[0][0], island_size)
+
+    print("%d" % (heuristic6(root)))
+
 
 
 if __name__ == "__main__":
